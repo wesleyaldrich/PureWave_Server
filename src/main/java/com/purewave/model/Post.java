@@ -15,4 +15,5 @@ public class Post {
     private String picture;
     private String content;
     private String attachment;
+    private String attachedTo;
 }

@@ -6,19 +6,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class PostService {
     @Autowired
     private PostRepository postRepository;
 
-    public List<Post> getAllPosts() {
-        return postRepository.findAll();
+    // Fetch only primary posts (attachedTo == null)
+    public List<Post> getPrimaryPosts() {
+        return postRepository.findByAttachedToIsNull();
     }
 
-    public Optional<Post> getPostById(String id) {
-        return postRepository.findById(id);
+    // Fetch replies for a given post ID
+    public List<Post> getRepliesByPostId(String postId) {
+        return postRepository.findByAttachedTo(postId);
     }
 
     public Post savePost(Post post) {

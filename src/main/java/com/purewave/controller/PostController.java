@@ -8,7 +8,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/data/posts")
@@ -17,13 +16,13 @@ public class PostController {
     private PostService postService;
 
     @GetMapping
-    public List<Post> getAllPosts() {
-        return postService.getAllPosts();
+    public List<Post> getPrimaryPosts() {
+        return postService.getPrimaryPosts();
     }
 
     @GetMapping("/{id}")
-    public Optional<Post> getPostById(@PathVariable String id) {
-        return postService.getPostById(id);
+    public List<Post> getRepliesByPostId(@PathVariable String id) {
+        return postService.getRepliesByPostId(id);
     }
 
     @PostMapping
