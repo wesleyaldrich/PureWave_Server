@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class PostService {
@@ -31,7 +32,7 @@ public class PostService {
     }
 
     @CachePut(value = "posts", key = "#result.id")
-    public Post savePost(@RequestBody Post post, Authentication authentication, String id) {
+    public Post savePost(String id, @RequestBody Post post, Authentication authentication) {
         OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
         String email = oauthUser.getAttribute("email");
         String name = oauthUser.getAttribute("name");
@@ -42,12 +43,63 @@ public class PostService {
         post.setPicture(picture);
 
         post.setAttachedTo(id);
+        // update the replyCount of parent
+        if (id != null) {
+            Optional<Post> optionalPost = postRepository.findById(id);
+            if (optionalPost.isPresent()) {
+                Post parentPost = optionalPost.get();
+
+                // Update parent and cache
+                updateRepliedPost(parentPost);
+            }
+            else {
+                throw new IllegalArgumentException("Post not found with ID: " + id);
+            }
+        }
+
+        post.setReplyCount(0);
 
         return postRepository.save(post);
     }
 
+    @CachePut(value = "posts", key = "#repliedPost.id")
+    public Post updateRepliedPost(Post repliedPost) {
+        repliedPost.setReplyCount((repliedPost.getReplyCount() == null ? 1 : repliedPost.getReplyCount()) + 1);
+        return postRepository.save(repliedPost);
+    }
+
+    @CachePut(value = "posts", key = "#id")
+    public Post editPost(String id, Post updatedPost, Authentication authentication) {
+        OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
+        String email = oauthUser.getAttribute("email");
+
+        Post existingPost = postRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + id));
+
+        // Check if it's the right user
+        if (!existingPost.getUserId().equals(email)) {
+            throw new SecurityException("You are not authorized to edit this post.");
+        }
+
+        existingPost.setContent(updatedPost.getContent());
+        existingPost.setAttachment(updatedPost.getAttachment());
+
+        return postRepository.save(existingPost);
+    }
+
     @CacheEvict(value = "posts", key = "#id")
-    public void deletePost(String id) {
+    public void deletePost(String id, Authentication authentication) {
+        OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
+        String email = oauthUser.getAttribute("email");
+
+        Post existingPost = postRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + id));
+
+        // Check if it's the right user
+        if (!existingPost.getUserId().equals(email)) {
+            throw new SecurityException("You are not authorized to delete this post.");
+        }
+
         postRepository.deleteById(id);
     }
 }

@@ -16,4 +16,5 @@ public class Post {
     private String content;
     private String attachment;
     private String attachedTo;
+    private Integer replyCount;
 }
