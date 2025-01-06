@@ -1,4 +1,4 @@
-﻿package com.purewave.config;
+package com.purewave.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
