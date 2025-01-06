@@ -35,6 +35,8 @@ public class PostController {
         post.setUserId(email);
         post.setName(name);
         post.setPicture(picture);
+        post.setAttachedTo(null);
+        // TO DO: attachment
 
         return postService.savePost(post);
     }
