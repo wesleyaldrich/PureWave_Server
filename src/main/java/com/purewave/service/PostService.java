@@ -19,6 +19,9 @@ public class PostService {
     @Autowired
     private PostRepository postRepository;
 
+    @Autowired
+    private UserProfileService userProfileService;
+
     // Fetch only primary posts (attachedTo == null)
     @Cacheable(value = "posts")
     public List<Post> getPrimaryPosts() {
@@ -38,9 +41,14 @@ public class PostService {
         String name = oauthUser.getAttribute("name");
         String picture = oauthUser.getAttribute("picture");
 
+        // Cache the user's profile image using a UserProfileService
+        String cachedProfileImageUrl = userProfileService.getOrSaveUserProfile(email, picture);
+
+        System.out.println(cachedProfileImageUrl);
+
         post.setUserId(email);
         post.setName(name);
-        post.setPicture(picture);
+        post.setPicture(cachedProfileImageUrl);
 
         post.setAttachedTo(id);
         // update the replyCount of parent
