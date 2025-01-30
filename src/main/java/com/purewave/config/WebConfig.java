@@ -12,5 +12,13 @@ public class WebConfig implements WebMvcConfigurer {
         // Map URL paths to the directory where your images are saved
         registry.addResourceHandler("/user-profile-images/**")
                 .addResourceLocations("file:./user-profile-images/");
+
+        // Map the 'uploads-audio/dry/' folder to be served as static content
+        registry.addResourceHandler("/audio/files/dry/**")
+                .addResourceLocations("file:./uploads-audio/dry/");
+
+        // Map the 'uploads-audio/wet/' folder to be served as static content
+        registry.addResourceHandler("/audio/files/wet/**")
+                .addResourceLocations("file:./uploads-audio/wet/");
     }
 }
