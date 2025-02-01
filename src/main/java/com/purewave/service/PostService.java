@@ -101,13 +101,26 @@ public class PostService {
         String email = oauthUser.getAttribute("email");
 
         Post existingPost = postRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + id));
 
         // Check if it's the right user
         if (!existingPost.getUserId().equals(email)) {
             throw new SecurityException("You are not authorized to delete this post.");
         }
 
+        // Recursively delete all replies
+        deleteRepliesRecursively(id);
+
+        // Delete the main post
         postRepository.deleteById(id);
+    }
+
+    private void deleteRepliesRecursively(String postId) {
+        List<Post> replies = postRepository.findByAttachedTo(postId);
+
+        for (Post reply : replies) {
+            deleteRepliesRecursively(reply.getId());
+            postRepository.deleteById(reply.getId());
+        }
     }
 }

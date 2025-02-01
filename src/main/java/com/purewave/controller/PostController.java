@@ -41,6 +41,7 @@ public class PostController {
 
     @DeleteMapping("/{id}")
     public void deletePost(@PathVariable String id, Authentication authentication) {
+
         postService.deletePost(id, authentication);
     }
 }
