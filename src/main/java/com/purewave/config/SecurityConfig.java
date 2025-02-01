@@ -24,13 +24,13 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        .requestMatchers(HttpMethod.GET, "/data/posts").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/data/posts").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/data/posts/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/data/posts/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/data/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/data/**").authenticated()
                         .requestMatchers("/data/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/audio").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/audio").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/audio/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/audio/**").authenticated()
                         .anyRequest().permitAll()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -51,13 +51,6 @@ public class SecurityConfig {
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
                 );
-//                .logout(logout -> logout
-//                        .logoutUrl("/logout")
-//                        .logoutSuccessUrl("/")
-//                        .invalidateHttpSession(true)
-//                        .clearAuthentication(true)
-//                        .deleteCookies("JSESSIONID", "oauth_token")
-//                );
 
         return http.build();
     }

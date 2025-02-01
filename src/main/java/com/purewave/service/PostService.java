@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class PostService {
@@ -23,12 +22,12 @@ public class PostService {
     private UserProfileService userProfileService;
 
     // Fetch only primary posts (attachedTo == null)
-    @Cacheable(value = "posts")
+    @Cacheable(value = "primaryPosts")
     public List<Post> getPrimaryPosts() {
         return postRepository.findByAttachedToIsNull();
     }
 
-    @Cacheable(value = "posts", key = "#postId")
+    @Cacheable(value = "replies", key = "#postId")
     // Fetch replies for a given post ID
     public List<Post> getRepliesByPostId(String postId) {
         return postRepository.findByAttachedTo(postId);
@@ -44,36 +43,29 @@ public class PostService {
         // Cache the user's profile image using a UserProfileService
         String cachedProfileImageUrl = userProfileService.getOrSaveUserProfile(email, picture);
 
-        System.out.println(cachedProfileImageUrl);
-
         post.setUserId(email);
         post.setName(name);
         post.setPicture(cachedProfileImageUrl);
-
         post.setAttachedTo(id);
-        // update the replyCount of parent
-        if (id != null) {
-            Optional<Post> optionalPost = postRepository.findById(id);
-            if (optionalPost.isPresent()) {
-                Post parentPost = optionalPost.get();
-
-                // Update parent and cache
-                updateRepliedPost(parentPost);
-            }
-            else {
-                throw new IllegalArgumentException("Post not found with ID: " + id);
-            }
-        }
-
         post.setReplyCount(0);
+
+        // Update the reply count of the parent post
+        if (id != null) {
+            Post parentPost = postRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + id));
+
+            // Update parent and cache
+            updateRepliedPost(parentPost, 1);
+        }
 
         return postRepository.save(post);
     }
 
     @CachePut(value = "posts", key = "#repliedPost.id")
-    public Post updateRepliedPost(Post repliedPost) {
-        repliedPost.setReplyCount((repliedPost.getReplyCount() == null ? 1 : repliedPost.getReplyCount()) + 1);
-        return postRepository.save(repliedPost);
+    @CacheEvict(value = "replyCount", key = "#repliedPost.id") // Ensure reply count updates correctly
+    public void updateRepliedPost(Post repliedPost, Integer change) {
+        repliedPost.setReplyCount((repliedPost.getReplyCount() == null ? change : repliedPost.getReplyCount()) + change);
+        postRepository.save(repliedPost);
     }
 
     @CachePut(value = "posts", key = "#id")
@@ -82,7 +74,7 @@ public class PostService {
         String email = oauthUser.getAttribute("email");
 
         Post existingPost = postRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + id));
 
         // Check if it's the right user
         if (!existingPost.getUserId().equals(email)) {
@@ -95,7 +87,7 @@ public class PostService {
         return postRepository.save(existingPost);
     }
 
-    @CacheEvict(value = "posts", key = "#id")
+    @CacheEvict(value = {"posts", "primaryPosts", "replies", "replyCount"}, key = "#id", allEntries = true)
     public void deletePost(String id, Authentication authentication) {
         OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
         String email = oauthUser.getAttribute("email");
@@ -108,13 +100,24 @@ public class PostService {
             throw new SecurityException("You are not authorized to delete this post.");
         }
 
-        // Recursively delete all replies
+        // Recursively delete all replies and evict their cache
         deleteRepliesRecursively(id);
+
+        // Update the reply count of the parent post
+        if (existingPost.getAttachedTo() != null) {
+            String parentId = existingPost.getAttachedTo();
+            Post parentPost = postRepository.findById(parentId)
+                    .orElseThrow(() -> new IllegalArgumentException("Parent post not found with ID: " + id));
+
+            // Update parent and cache
+            updateRepliedPost(parentPost, -1);
+        }
 
         // Delete the main post
         postRepository.deleteById(id);
     }
 
+    @CacheEvict(value = {"posts", "replies", "replyCount"}, key = "#postId", allEntries = true)
     private void deleteRepliesRecursively(String postId) {
         List<Post> replies = postRepository.findByAttachedTo(postId);
 
