@@ -82,7 +82,7 @@ public class PostService {
     }
 
     @CachePut(value = "posts", key = "#id")
-    public Post editPost(String id, Post updatedPost, Authentication authentication) {
+    public Post editPost(String id, Post updatedPost, MultipartFile file, Authentication authentication) throws IOException {
         OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
         String email = oauthUser.getAttribute("email");
 
@@ -94,11 +94,18 @@ public class PostService {
             throw new SecurityException("You are not authorized to edit this post.");
         }
 
+        // Update content
         existingPost.setContent(updatedPost.getContent());
-        existingPost.setAttachment(updatedPost.getAttachment());
+
+        // Handle file upload (if a new file is provided)
+        if (file != null && !file.isEmpty()) {
+            String fileName = saveFile(file);  // Implement this method
+            existingPost.setAttachment(fileName);  // Save file name or URL
+        }
 
         return postRepository.save(existingPost);
     }
+
 
     @CacheEvict(value = {"posts", "primaryPosts", "replies", "replyCount"}, key = "#id", allEntries = true)
     public void deletePost(String id, Authentication authentication) {

@@ -46,10 +46,16 @@ public class PostController {
         return postService.savePost(id, content, attachment, authentication);
     }
 
-    @PutMapping("/{id}")
-    public Post editPost(@PathVariable String id, @RequestBody Post updatedPost, Authentication authentication) {
-        return postService.editPost(id, updatedPost, authentication);
+    @PutMapping(value = "/{id}", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
+    public Post editPost(
+            @PathVariable String id,
+            @RequestPart("post") Post updatedPost,
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            Authentication authentication) {
+
+        return postService.editPost(id, updatedPost, file, authentication);
     }
+
 
     @DeleteMapping("/{id}")
     public void deletePost(@PathVariable String id, Authentication authentication) {
