@@ -9,8 +9,14 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 @Service
@@ -34,27 +40,34 @@ public class PostService {
     }
 
     @CachePut(value = "posts", key = "#result.id")
-    public Post savePost(String id, @RequestBody Post post, Authentication authentication) {
+    public Post savePost(String id, String content, MultipartFile attachment, Authentication authentication) throws IOException {
         OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
         String email = oauthUser.getAttribute("email");
         String name = oauthUser.getAttribute("name");
         String picture = oauthUser.getAttribute("picture");
 
-        // Cache the user's profile image using a UserProfileService
+        // Cache the user's profile image
         String cachedProfileImageUrl = userProfileService.getOrSaveUserProfile(email, picture);
 
+        Post post = new Post();
         post.setUserId(email);
         post.setName(name);
         post.setPicture(cachedProfileImageUrl);
+        post.setContent(content);
         post.setAttachedTo(id);
         post.setReplyCount(0);
 
-        // Update the reply count of the parent post
+        // Save attachment if exists
+        if (attachment != null && !attachment.isEmpty()) {
+            String fileName = saveFile(attachment); // Save file and get its filename
+            post.setAttachment("/attachments/" + fileName); // Store the file path
+        }
+
+        // Update parent post if replying
         if (id != null) {
             Post parentPost = postRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + id));
 
-            // Update parent and cache
             updateRepliedPost(parentPost, 1);
         }
 
@@ -125,5 +138,21 @@ public class PostService {
             deleteRepliesRecursively(reply.getId());
             postRepository.deleteById(reply.getId());
         }
+    }
+
+    private String saveFile(MultipartFile file) throws IOException {
+        String uploadDir = "attachments/";
+        File uploadFolder = new File(uploadDir);
+
+        if (!uploadFolder.exists()) {
+            uploadFolder.mkdirs();
+        }
+
+        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+        Path filePath = Paths.get(uploadDir, fileName);
+
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+        return fileName;
     }
 }
