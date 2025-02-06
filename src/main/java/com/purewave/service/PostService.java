@@ -82,7 +82,7 @@ public class PostService {
     }
 
     @CachePut(value = "posts", key = "#id")
-    public Post editPost(String id, Post updatedPost, MultipartFile file, Authentication authentication) throws IOException {
+    public Post editPost(String id, String newContent, MultipartFile file, Authentication authentication) throws IOException {
         OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
         String email = oauthUser.getAttribute("email");
 
@@ -95,7 +95,7 @@ public class PostService {
         }
 
         // Update content
-        existingPost.setContent(updatedPost.getContent());
+        existingPost.setContent(newContent);
 
         // Handle file upload (if a new file is provided)
         if (file != null && !file.isEmpty()) {

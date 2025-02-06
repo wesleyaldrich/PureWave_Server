@@ -49,11 +49,11 @@ public class PostController {
     @PutMapping(value = "/{id}", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
     public Post editPost(
             @PathVariable String id,
-            @RequestPart("post") Post updatedPost,
-            @RequestPart(value = "file", required = false) MultipartFile file,
-            Authentication authentication) {
+            @RequestParam("content") String newContent,
+            @RequestParam(value = "attachment", required = false) MultipartFile file,
+            Authentication authentication) throws IOException {
 
-        return postService.editPost(id, updatedPost, file, authentication);
+        return postService.editPost(id, newContent, file, authentication);
     }
 
 
