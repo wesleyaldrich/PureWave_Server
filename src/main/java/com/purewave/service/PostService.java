@@ -100,7 +100,7 @@ public class PostService {
         // Handle file upload (if a new file is provided)
         if (file != null && !file.isEmpty()) {
             String fileName = saveFile(file);  // Implement this method
-            existingPost.setAttachment(fileName);  // Save file name or URL
+            existingPost.setAttachment("/attachments/" + fileName);  // Save file name or URL
         }
 
         return postRepository.save(existingPost);
