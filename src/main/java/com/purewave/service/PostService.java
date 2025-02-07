@@ -102,6 +102,9 @@ public class PostService {
             String fileName = saveFile(file);  // Implement this method
             existingPost.setAttachment("/attachments/" + fileName);  // Save file name or URL
         }
+        else {
+            existingPost.setAttachment(null);
+        }
 
         return postRepository.save(existingPost);
     }
