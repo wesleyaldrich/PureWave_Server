@@ -1,5 +1,7 @@
 package com.purewave.service;
 
+import com.purewave.exception.PostNotFoundException;
+import com.purewave.exception.UnauthorizedException;
 import com.purewave.model.Post;
 import com.purewave.repository.PostRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +35,8 @@ public class PostService {
         return postRepository.findByAttachedToIsNull();
     }
 
-    @Cacheable(value = "replies", key = "#postId")
     // Fetch replies for a given post ID
+    @Cacheable(value = "replies", key = "#postId")
     public List<Post> getRepliesByPostId(String postId) {
         return postRepository.findByAttachedTo(postId);
     }
@@ -59,14 +61,14 @@ public class PostService {
 
         // Save attachment if exists
         if (attachment != null && !attachment.isEmpty()) {
-            String fileName = saveFile(attachment); // Save file and get its filename
-            post.setAttachment("/attachments/" + fileName); // Store the file path
+            String fileName = saveFile(attachment);
+            post.setAttachment("/attachments/" + fileName);
         }
 
         // Update parent post if replying
         if (id != null) {
             Post parentPost = postRepository.findById(id)
-                    .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + id));
+                    .orElseThrow(() -> new PostNotFoundException("Post not found with ID: " + id));
 
             updateRepliedPost(parentPost, 1);
         }
@@ -75,7 +77,7 @@ public class PostService {
     }
 
     @CachePut(value = "posts", key = "#repliedPost.id")
-    @CacheEvict(value = "replyCount", key = "#repliedPost.id") // Ensure reply count updates correctly
+    @CacheEvict(value = "replyCount", key = "#repliedPost.id")
     public void updateRepliedPost(Post repliedPost, Integer change) {
         repliedPost.setReplyCount((repliedPost.getReplyCount() == null ? change : repliedPost.getReplyCount()) + change);
         postRepository.save(repliedPost);
@@ -87,20 +89,19 @@ public class PostService {
         String email = oauthUser.getAttribute("email");
 
         Post existingPost = postRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + id));
+                .orElseThrow(() -> new PostNotFoundException("Post not found with ID: " + id));
 
-        // Check if it's the right user
+        // Validate user
         if (!existingPost.getUserId().equals(email)) {
-            throw new SecurityException("You are not authorized to edit this post.");
+            throw new UnauthorizedException("You are not authorized to edit this post.");
         }
 
-        // Update content
         existingPost.setContent(newContent);
 
         // Handle file upload (if a new file is provided)
         if (file != null && !file.isEmpty()) {
-            String fileName = saveFile(file);  // Implement this method
-            existingPost.setAttachment("/attachments/" + fileName);  // Save file name or URL
+            String fileName = saveFile(file);
+            existingPost.setAttachment("/attachments/" + fileName);
         }
         else {
             existingPost.setAttachment(null);
@@ -116,21 +117,21 @@ public class PostService {
         String email = oauthUser.getAttribute("email");
 
         Post existingPost = postRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + id));
+                .orElseThrow(() -> new PostNotFoundException("Post not found with ID: " + id));
 
-        // Check if it's the right user
+        // Validate user
         if (!existingPost.getUserId().equals(email)) {
-            throw new SecurityException("You are not authorized to delete this post.");
+            throw new UnauthorizedException("You are not authorized to delete this post.");
         }
 
-        // Recursively delete all replies and evict their cache
+        // Recursively delete all replies and evict cache
         deleteRepliesRecursively(id);
 
-        // Update the reply count of the parent post
+        // Update reply count of parent post
         if (existingPost.getAttachedTo() != null) {
             String parentId = existingPost.getAttachedTo();
             Post parentPost = postRepository.findById(parentId)
-                    .orElseThrow(() -> new IllegalArgumentException("Parent post not found with ID: " + id));
+                    .orElseThrow(() -> new PostNotFoundException("Parent post not found with ID: " + id));
 
             // Update parent and cache
             updateRepliedPost(parentPost, -1);

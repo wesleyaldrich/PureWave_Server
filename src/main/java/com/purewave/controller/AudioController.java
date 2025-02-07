@@ -14,23 +14,7 @@ public class AudioController {
     private AudioService audioService;
 
     @PostMapping
-    public String uploadAudio(@RequestParam("audio") MultipartFile file) {
-        try {
-            return audioService.saveAudio(file);
-        } catch (IOException e) {
-            return "Failed to save audio: " + e.getMessage();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @GetMapping("/dry")
-    public String getAudioDry(){
-        return audioService.getAudioDry();
-    }
-
-    @GetMapping("/wet")
-    public String getAudioWet(){
-        return audioService.getAudioWet();
+    public String uploadAudio(@RequestParam("audio") MultipartFile file) throws IOException {
+        return audioService.saveAudio(file);
     }
 }

@@ -1,5 +1,6 @@
 package com.purewave.service;
 
+import com.purewave.exception.ApiDownException;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -44,70 +45,45 @@ public class AudioService {
         Files.copy(file.getInputStream(), dryFilePath, StandardCopyOption.REPLACE_EXISTING);
 
         // Send the file to Flask API for enhancement
-        byte[] wetAudioData = sendToFlask(dryFilePath);
+        try {
+            byte[] wetAudioData = sendToFlask(dryFilePath);
 
-        // Save wet audio file locally
-        String uniqueFilenameWet = "enhanced_" + id + "_" + originalFilenameDry;
-        Path wetFilePath = wetPath.resolve(uniqueFilenameWet);
-        Files.write(wetFilePath, wetAudioData);
+            // Save wet audio file locally
+            String uniqueFilenameWet = "enhanced_" + id + "_" + originalFilenameDry;
+            Path wetFilePath = wetPath.resolve(uniqueFilenameWet);
+            Files.write(wetFilePath, wetAudioData);
 
-        // Return the unique filenames for both dry and wet files
-        return uniqueFilenameDry + "," + uniqueFilenameWet;
+            // Return the unique filenames for both dry and wet files
+            return uniqueFilenameDry + "," + uniqueFilenameWet;
+        } catch (ApiDownException ex) {
+            throw new ApiDownException("Flask API is down.");
+        }
     }
 
     private byte[] sendToFlask(Path dryFilePath) throws IOException {
         RestTemplate restTemplate = new RestTemplate();
+
+        // Set the contentType in headers
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
+        // Set "audio" in body
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("audio", new FileSystemResource(dryFilePath.toFile()));
 
+        // Combine headers and body, send to flask
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-        ResponseEntity<byte[]> response = restTemplate.exchange(FLASK_API_URL, HttpMethod.POST, requestEntity, byte[].class);
 
-        if (response.getStatusCode() == HttpStatus.OK) {
-            return response.getBody();
-        } else {
-            throw new IOException("Failed to enhance audio: " + response.getStatusCode());
-        }
-    }
-
-    public String getAudioDry() {
-        return getLatestFilePath(DRY_AUDIO_PATH);
-    }
-
-    public String getAudioWet() {
-        return getLatestFilePath(WET_AUDIO_PATH);
-    }
-
-    private String getLatestFilePath(String directoryPath) {
         try {
-            Path dirPath = Paths.get(directoryPath);
+            ResponseEntity<byte[]> response = restTemplate.exchange(FLASK_API_URL, HttpMethod.POST, requestEntity, byte[].class);
 
-            if (!Files.exists(dirPath)) {
-                return "Directory does not exist: " + directoryPath;
+            if (response.getStatusCode() == HttpStatus.OK) {
+                return response.getBody();
+            } else {
+                throw new IOException("API failure on enhancing audio: " + response.getStatusCode());
             }
-
-            return Files.list(dirPath)
-                    .filter(Files::isRegularFile)
-                    .sorted((file1, file2) -> {
-                        try {
-                            return Files.getLastModifiedTime(file2).compareTo(Files.getLastModifiedTime(file1));
-                        } catch (Exception e) {
-                            return 0;
-                        }
-                    })
-                    .map(Path::toString)
-                    .findFirst()
-                    .map(filePath -> "http://localhost:8080/audio/files/" + Paths.get(filePath).getFileName().toString())  // Return a URL
-                    .orElse("No audio files found in: " + directoryPath);
-
-        } catch (Exception e) {
-            // Log the exception for debugging purposes
-            e.printStackTrace();
-            return "Error retrieving files: " + e.getMessage();
+        } catch (ApiDownException ex) {
+            throw new ApiDownException("Flask API is down.");
         }
     }
-
 }
