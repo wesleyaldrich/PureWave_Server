@@ -34,3 +34,8 @@ build/
 
 # PROPERTIES
 /src/main/resources/application.properties
+
+# RESOURCES
+/user-profile-images/
+/uploads-audio/
+/attachments/
