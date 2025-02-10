@@ -24,8 +24,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
-        if (authentication instanceof OAuth2AuthenticationToken) {
-            OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+        if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
             OAuth2AuthorizedClient authorizedClient = authorizedClientService.loadAuthorizedClient(
                     oauthToken.getAuthorizedClientRegistrationId(), oauthToken.getName());
 
