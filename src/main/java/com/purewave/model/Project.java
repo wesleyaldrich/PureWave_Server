@@ -10,8 +10,9 @@ public class Project {
 
     @Id
     private String id;
-    private String title;
+    private String accessId;
     private String userId;
-    private String dry_audio;
-    private String wet_audio;
+    private String title;
+    private String dryAudio;
+    private String wetAudio;
 }

@@ -25,7 +25,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                         .requestMatchers(HttpMethod.GET, "/data/posts/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/data/posts/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/data/projects/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/data/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/data/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/data/**").authenticated()
                         .requestMatchers("/data/**").authenticated()
