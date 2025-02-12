@@ -23,12 +23,8 @@ public class ProjectService {
         return projectRepository.findByUserId(email);
     }
 
-    public Optional<Project> getProjectById(String id) {
+    public Optional<Project> openProject(String id) {
         return projectRepository.findById(id);
-    }
-
-    public List<Project> getProjectsByUserId(String userId) {
-        return projectRepository.findByUserId(userId);
     }
 
     public Project saveProject(Project project, Authentication authentication) {
@@ -57,7 +53,7 @@ public class ProjectService {
         return salt.toString();
     }
 
-    public void deleteProject(String id) {
+    public void deleteProject(String id, Authentication authentication) {
         projectRepository.deleteById(id);
     }
 }
