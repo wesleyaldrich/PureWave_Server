@@ -1,5 +1,7 @@
 package com.purewave.service;
 
+import com.purewave.exception.ProjectNotFoundException;
+import com.purewave.exception.UnauthorizedException;
 import com.purewave.model.Project;
 import com.purewave.repository.ProjectRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +56,17 @@ public class ProjectService {
     }
 
     public void deleteProject(String id, Authentication authentication) {
+        OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
+        String email = oauthUser.getAttribute("email");
+
+        Project existingProject = projectRepository.findById(id)
+                .orElseThrow(() -> new ProjectNotFoundException("Project not found with ID: " + id));
+
+        // Validate user
+        if (!existingProject.getUserId().equals(email)) {
+            throw new UnauthorizedException("You are not authorized to delete this post.");
+        }
+
         projectRepository.deleteById(id);
     }
 }

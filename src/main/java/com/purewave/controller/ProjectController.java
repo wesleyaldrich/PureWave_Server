@@ -29,4 +29,9 @@ public class ProjectController {
     public Project createProject(@RequestBody Project project, Authentication authentication) {
         return projectService.saveProject(project, authentication);
     }
+
+    @DeleteMapping("/{id}")
+    public void deleteProject(@PathVariable String id, Authentication authentication) {
+        projectService.deleteProject(id, authentication);
+    }
 }
