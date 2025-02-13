@@ -20,9 +20,9 @@ public class ProjectController {
         return projectService.getOwnProjects(authentication);
     }
 
-    @GetMapping("/{id}")
-    public Optional<Project> openProject(@PathVariable String id) {
-        return projectService.openProject(id);
+    @GetMapping("/{accessId}")
+    public Optional<Project> openProject(@PathVariable String accessId) {
+        return projectService.openProject(accessId);
     }
 
     @PostMapping

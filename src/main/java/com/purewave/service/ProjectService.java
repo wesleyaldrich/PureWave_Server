@@ -23,8 +23,8 @@ public class ProjectService {
         return projectRepository.findByUserId(email);
     }
 
-    public Optional<Project> openProject(String id) {
-        return projectRepository.findById(id);
+    public Optional<Project> openProject(String accessId) {
+        return projectRepository.findByAccessId(accessId);
     }
 
     public Project saveProject(Project project, Authentication authentication) {
