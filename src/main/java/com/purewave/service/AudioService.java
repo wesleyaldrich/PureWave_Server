@@ -20,7 +20,7 @@ import java.util.Objects;
 public class AudioService {
     private static final String DRY_AUDIO_PATH = "uploads-audio/dry/";
     private static final String WET_AUDIO_PATH = "uploads-audio/wet/";
-    private static final String FLASK_API_URL = "http://localhost:5000/audio";
+    private static final String FLASK_API_URL = "http://localhost:5555/audio";
 
     public String saveAudio(MultipartFile file) throws IOException {
         // Ensure the upload directories exist
