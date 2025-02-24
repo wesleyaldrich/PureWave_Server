@@ -55,6 +55,23 @@ public class ProjectService {
         return salt.toString();
     }
 
+    public void renameProject(String id, String newName, Authentication authentication) {
+        OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
+        String email = oauthUser.getAttribute("email");
+
+        Project existingProject = projectRepository.findById(id)
+                .orElseThrow(() -> new ProjectNotFoundException("Project not found with ID: " + id));
+
+        // Validate user
+        if (!existingProject.getUserId().equals(email)) {
+            throw new UnauthorizedException("You are not authorized to delete this post.");
+        }
+
+        existingProject.setTitle(newName);
+
+        projectRepository.save(existingProject);
+    }
+
     public void deleteProject(String id, Authentication authentication) {
         OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
         String email = oauthUser.getAttribute("email");

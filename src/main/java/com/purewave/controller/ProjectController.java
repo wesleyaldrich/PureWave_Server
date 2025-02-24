@@ -7,6 +7,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -23,6 +24,13 @@ public class ProjectController {
     @GetMapping("/{accessId}")
     public Optional<Project> openProject(@PathVariable String accessId) {
         return projectService.openProject(accessId);
+    }
+
+    @PutMapping("/{id}")
+    public void renameProject(@PathVariable String id, @RequestBody Map<String, String> req, Authentication authentication){
+        String newName = req.get("title");
+
+        projectService.renameProject(id, newName, authentication);
     }
 
     @PostMapping
